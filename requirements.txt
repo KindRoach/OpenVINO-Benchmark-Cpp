@@ -1,0 +1,2 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+openvino-dev[pytorch]==2022.3
