@@ -1,23 +1,23 @@
-#include "opencv2/opencv.hpp"
 #include <chrono>
 #include <iostream>
+#include <opencv2/opencv.hpp>
+#include <argparse/argparse.hpp>
 
 using namespace cv;
 using namespace std;
-using namespace std::chrono;
 
-int main() {
+void sync_decode(uint sec) {
     VideoCapture cap("outputs/video.mp4");
 
     if (!cap.isOpened()) {
         cout << "Error opening video stream or file" << endl;
-        return -1;
+        return;
     }
 
     Mat frame;
     uint64_t frame_count = 0;
-    auto finish = system_clock::now() + 1min;
-    while (system_clock::now() < finish) {
+    auto finish = chrono::system_clock::now() + chrono::seconds(sec);
+    while (chrono::system_clock::now() < finish) {
         bool success = cap.read(frame);
         if (not success) {
             cap.set(CAP_PROP_POS_FRAMES, 0);
@@ -28,4 +28,15 @@ int main() {
     cout << "fps: " << static_cast<double>(frame_count) / 60.0 << endl;
 
     cap.release();
+}
+
+int main(int argc, char *argv[]) {
+    argparse::ArgumentParser program("sync_decode");
+    program.add_argument("-t", "--time")
+            .help("time in seconds for benchmark")
+            .default_value(60)
+            .scan<'u', uint>();
+    program.parse_args(argc, argv);
+    uint sec = program.get<uint>("time");
+    sync_decode(sec);
 }
