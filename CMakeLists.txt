@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 3.22)
+project(OpenVINO_Benchmark_Cpp)
+
+set(CMAKE_CXX_STANDARD 23)
+
+find_package(OpenCV REQUIRED)
+
+add_executable(sync_decode opencv_benchmark/sync_decode.cpp)
+target_include_directories(sync_decode PRIVATE ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(sync_decode PRIVATE ${OpenCV_LIBS})
