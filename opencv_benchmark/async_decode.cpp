@@ -8,7 +8,7 @@
 using namespace cv;
 using namespace std;
 
-double decode(uint sec) {
+uint64_t decode(int sec) {
     VideoCapture cap("outputs/video.mp4");
 
     if (!cap.isOpened()) {
@@ -23,30 +23,38 @@ double decode(uint sec) {
         bool success = cap.read(frame);
         if (not success) {
             cap.set(CAP_PROP_POS_FRAMES, 0);
+            continue;
         }
         frame_count++;
     }
 
     cap.release();
 
-    return static_cast<double>(frame_count) / 60.0;
+    return frame_count;
 }
 
 void async_decode(uint n_stream, uint sec) {
-    vector<future<double>> futures;
+    vector<future<uint64_t>> futures;
+
+    auto start = chrono::system_clock::now();
+
     for (int i = 0; i < n_stream; ++i) {
         futures.push_back(async(decode, sec));
     }
 
-    double total_fps = 0;
+    uint64_t total_fps = 0;
     for (auto &result: futures) {
-        double fps = result.get();
+        uint64_t fps = result.get();
         if (fps > 0) {
             total_fps += fps;
         }
     }
 
-    cout << "fps: " << total_fps << endl;
+    auto end = chrono::system_clock::now();
+    auto diff = chrono::duration_cast<chrono::seconds>(end - start).count();
+    double fps = static_cast<double>(total_fps) / static_cast<double>(diff);
+
+    cout << "fps: " << fps << endl;
 }
 
 int main(int argc, char *argv[]) {
@@ -54,11 +62,11 @@ int main(int argc, char *argv[]) {
     program.add_argument("-t", "--time")
             .help("time in seconds for benchmark")
             .default_value(60)
-            .scan<'u', uint>();
+            .scan<'i', int>();
     program.add_argument("-n", "--n_stream")
             .help("number of decode stream")
             .default_value(16)
-            .scan<'u', uint>();
+            .scan<'i', int>();
     program.parse_args(argc, argv);
     int sec = program.get<int>("time");
     int n_stream = program.get<int>("n_stream");

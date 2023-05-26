@@ -6,7 +6,7 @@
 using namespace cv;
 using namespace std;
 
-void sync_decode(uint sec) {
+void sync_decode(int sec) {
     VideoCapture cap("outputs/video.mp4");
 
     if (!cap.isOpened()) {
@@ -35,8 +35,8 @@ int main(int argc, char *argv[]) {
     program.add_argument("-t", "--time")
             .help("time in seconds for benchmark")
             .default_value(60)
-            .scan<'u', uint>();
+            .scan<'i', int>();
     program.parse_args(argc, argv);
-    uint sec = program.get<uint>("time");
+    int sec = program.get<int>("time");
     sync_decode(sec);
 }
