@@ -7,7 +7,7 @@ using namespace cv;
 using namespace std;
 
 void sync_decode(int sec) {
-    VideoCapture cap("outputs/video.mp4");
+    VideoCapture cap("output/video.mp4");
 
     if (!cap.isOpened()) {
         cout << "Error opening video stream or file" << endl;
