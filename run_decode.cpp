@@ -3,6 +3,7 @@
 #include <future>
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <spdlog/spdlog.h>
 
 argparse::ArgumentParser parseArg(int argc, char *const *argv);
 using namespace cv;
@@ -34,6 +35,7 @@ uint64_t decode(uint sec) {
 }
 
 void sync_decode(uint sec) {
+    spdlog::info("sync encoding with in {} seconds...", sec);
     auto start = chrono::system_clock::now();
     auto frames = decode(sec);
     auto end = chrono::system_clock::now();
@@ -43,6 +45,7 @@ void sync_decode(uint sec) {
 }
 
 void async_decode(uint n_stream, uint sec) {
+    spdlog::info("async encoding with {} threads in {} seconds...", n_stream, sec);
     vector<future<uint64_t>> futures;
 
     auto start = chrono::system_clock::now();
