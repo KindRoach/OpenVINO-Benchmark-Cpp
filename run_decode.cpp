@@ -4,10 +4,11 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
+argparse::ArgumentParser parseArg(int argc, char *const *argv);
 using namespace cv;
 using namespace std;
 
-uint64_t decode(int sec) {
+uint64_t decode(uint sec) {
     VideoCapture cap("output/video.mp4");
 
     if (!cap.isOpened()) {
@@ -32,6 +33,15 @@ uint64_t decode(int sec) {
     return frame_count;
 }
 
+void sync_decode(uint sec) {
+    auto start = chrono::system_clock::now();
+    auto frames = decode(sec);
+    auto end = chrono::system_clock::now();
+    auto diff = chrono::duration_cast<chrono::seconds>(end - start).count();
+    double fps = static_cast<double>(frames) / static_cast<double>(diff);
+    cout << "fps: " << fps << endl;
+}
+
 void async_decode(uint n_stream, uint sec) {
     vector<future<uint64_t>> futures;
 
@@ -41,33 +51,50 @@ void async_decode(uint n_stream, uint sec) {
         futures.push_back(async(decode, sec));
     }
 
-    uint64_t total_fps = 0;
+    uint64_t total_frames = 0;
     for (auto &result: futures) {
-        uint64_t fps = result.get();
-        if (fps > 0) {
-            total_fps += fps;
+        uint64_t frames = result.get();
+        if (frames > 0) {
+            total_frames += frames;
         }
     }
 
     auto end = chrono::system_clock::now();
     auto diff = chrono::duration_cast<chrono::seconds>(end - start).count();
-    double fps = static_cast<double>(total_fps) / static_cast<double>(diff);
+    double fps = static_cast<double>(total_frames) / static_cast<double>(diff);
 
     cout << "fps: " << fps << endl;
 }
 
-int main(int argc, char *argv[]) {
+argparse::ArgumentParser parseArg(int argc, char *const *argv) {
     argparse::ArgumentParser program("sync_decode");
     program.add_argument("-t", "--time")
             .help("time in seconds for benchmark")
             .default_value(60)
             .scan<'i', int>();
+    program.add_argument("-rm", "--run_mode")
+            .help("run mode: sync or async")
+            .default_value(string{"sync"});
     program.add_argument("-n", "--n_stream")
             .help("number of decode stream")
             .default_value(16)
             .scan<'i', int>();
     program.parse_args(argc, argv);
+    return program;
+}
+
+int main(int argc, char *argv[]) {
+    argparse::ArgumentParser program = parseArg(argc, argv);
+
     int sec = program.get<int>("time");
+    std::string run_mode = program.get<std::string>("run_mode");
     int n_stream = program.get<int>("n_stream");
-    async_decode(n_stream, sec);
+
+    if (run_mode == "sync") {
+        sync_decode(sec);
+    } else if (run_mode == "async") {
+        async_decode(n_stream, sec);
+    } else {
+        return -1;
+    }
 }

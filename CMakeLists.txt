@@ -6,17 +6,9 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 
 find_package(OpenCV REQUIRED)
 
-add_executable(sync_decode opencv_benchmark/sync_decode.cpp)
-target_include_directories(sync_decode PRIVATE
+add_executable(run_decode run_decode.cpp)
+target_include_directories(run_decode PRIVATE
         "lib/argparse/include"
         ${OpenCV_INCLUDE_DIRS}
         "lib/spdlog/include")
-target_link_libraries(sync_decode PRIVATE ${OpenCV_LIBS})
-
-
-add_executable(async_decode opencv_benchmark/async_decode.cpp)
-target_include_directories(async_decode PRIVATE
-        "lib/argparse/include"
-        ${OpenCV_INCLUDE_DIRS}
-        "lib/spdlog/include")
-target_link_libraries(async_decode PRIVATE ${OpenCV_LIBS})
+target_link_libraries(run_decode PRIVATE ${OpenCV_LIBS})
