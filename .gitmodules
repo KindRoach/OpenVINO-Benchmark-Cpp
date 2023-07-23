@@ -1,6 +1,7 @@
 [submodule "lib/argparse"]
 	path = lib/argparse
 	url = https://github.com/p-ranav/argparse.git
+	branch = v2.9
 [submodule "lib/OpenVINO-Benchmark-Python"]
 	path = lib/OpenVINO-Benchmark-Python
 	url = https://github.com/KindRoach/OpenVINO-Benchmark-Python.git
