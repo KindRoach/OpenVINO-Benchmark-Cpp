@@ -1,9 +1,8 @@
-#include <thread>
-#include <future>
+#include <argparse/argparse.hpp>
 #include <chrono>
+#include <future>
 #include <iostream>
 #include <opencv2/opencv.hpp>
-#include <argparse/argparse.hpp>
 
 using namespace cv;
 using namespace std;
@@ -72,4 +71,3 @@ int main(int argc, char *argv[]) {
     int n_stream = program.get<int>("n_stream");
     async_decode(n_stream, sec);
 }
-

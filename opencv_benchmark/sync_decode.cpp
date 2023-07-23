@@ -1,7 +1,7 @@
+#include <argparse/argparse.hpp>
 #include <chrono>
 #include <iostream>
 #include <opencv2/opencv.hpp>
-#include <argparse/argparse.hpp>
 
 using namespace cv;
 using namespace std;
