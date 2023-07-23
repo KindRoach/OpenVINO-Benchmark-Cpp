@@ -3,6 +3,7 @@
 #include <future>
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <set>
 #include <spdlog/spdlog.h>
 
 argparse::ArgumentParser parseArg(int argc, char *const *argv);
@@ -13,8 +14,8 @@ uint64_t decode(uint sec) {
     VideoCapture cap("output/video.mp4");
 
     if (!cap.isOpened()) {
-        cout << "Error opening video stream or file" << endl;
-        return -1;
+        spdlog::error("Error opening video stream or file");
+        exit(1);
     }
 
     Mat frame;
@@ -44,7 +45,7 @@ void sync_decode(uint sec) {
     cout << "fps: " << fps << endl;
 }
 
-void async_decode(uint n_stream, uint sec) {
+void multi_decode(uint n_stream, uint sec) {
     spdlog::info("async encoding with {} threads in {} seconds...", n_stream, sec);
     vector<future<uint64_t>> futures;
 
@@ -76,8 +77,16 @@ argparse::ArgumentParser parseArg(int argc, char *const *argv) {
             .default_value(60)
             .scan<'i', int>();
     program.add_argument("-rm", "--run_mode")
-            .help("run mode: sync or async")
-            .default_value(string{"sync"});
+            .help("run mode: sync or multi")
+            .default_value(string{"sync"})
+            .action([](const std::string &value) {
+                static const std::set<std::string> choices = {"sync", "multi"};
+                if (choices.contains(value)) {
+                    return value;
+                }
+                spdlog::error("illegal input for run mode: {}", value);
+                exit(1);
+            });
     program.add_argument("-n", "--n_stream")
             .help("number of decode stream")
             .default_value(16)
@@ -90,14 +99,12 @@ int main(int argc, char *argv[]) {
     argparse::ArgumentParser program = parseArg(argc, argv);
 
     int sec = program.get<int>("time");
-    std::string run_mode = program.get<std::string>("run_mode");
+    string run_mode = program.get<string>("run_mode");
     int n_stream = program.get<int>("n_stream");
 
     if (run_mode == "sync") {
         sync_decode(sec);
-    } else if (run_mode == "async") {
-        async_decode(n_stream, sec);
-    } else {
-        return -1;
+    } else if (run_mode == "multi") {
+        multi_decode(n_stream, sec);
     }
 }
