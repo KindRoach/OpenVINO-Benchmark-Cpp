@@ -10,7 +10,7 @@ argparse::ArgumentParser parseArg(int argc, char *const *argv);
 using namespace cv;
 using namespace std;
 
-uint64_t decode(uint sec) {
+int decode(int sec) {
     VideoCapture cap("output/video.mp4");
 
     if (!cap.isOpened()) {
@@ -19,7 +19,7 @@ uint64_t decode(uint sec) {
     }
 
     Mat frame;
-    uint64_t frame_count = 0;
+    int frame_count = 0;
     auto finish = chrono::system_clock::now() + chrono::seconds(sec);
     while (chrono::system_clock::now() < finish) {
         bool success = cap.read(frame);
@@ -35,7 +35,7 @@ uint64_t decode(uint sec) {
     return frame_count;
 }
 
-void sync_decode(uint sec) {
+void sync_decode(int sec) {
     spdlog::info("sync encoding with in {} seconds...", sec);
     auto start = chrono::system_clock::now();
     auto frames = decode(sec);
@@ -45,9 +45,9 @@ void sync_decode(uint sec) {
     cout << "fps: " << fps << endl;
 }
 
-void multi_decode(uint n_stream, uint sec) {
+void multi_decode(int n_stream, int sec) {
     spdlog::info("async encoding with {} threads in {} seconds...", n_stream, sec);
-    vector<future<uint64_t>> futures;
+    vector<future<int>> futures;
 
     auto start = chrono::system_clock::now();
 
@@ -55,9 +55,9 @@ void multi_decode(uint n_stream, uint sec) {
         futures.push_back(async(decode, sec));
     }
 
-    uint64_t total_frames = 0;
+    int total_frames = 0;
     for (auto &result: futures) {
-        uint64_t frames = result.get();
+        int frames = result.get();
         if (frames > 0) {
             total_frames += frames;
         }
