@@ -11,12 +11,31 @@
 using namespace cv;
 using namespace std;
 
-ov::Tensor infer_one_frame(ov::InferRequest infer_request, Mat frame) {
-    ov::element::Type input_type = ov::element::u8;
-    auto shape = frame.size();
-    auto height = static_cast<unsigned long>(shape.height);
-    auto width = static_cast<unsigned long>(shape.width);
-    ov::Shape input_shape = {1, height, width, 3};
+Mat preprocess_frame(Mat frame, ov::Shape input_shape) {
+    int width = static_cast<int>(input_shape[2]);
+    int height = static_cast<int>(input_shape[3]);
+
+    resize(frame, frame, Size(width, height));
+    cvtColor(frame, frame, COLOR_BGR2RGB);
+    frame.convertTo(frame, CV_32F, 1.0 / 255, 0);
+
+    Mat mean = Mat(frame.size(), CV_32FC3, Scalar(0.485, 0.456, 0.406));
+    Mat std = Mat(frame.size(), CV_32FC3, Scalar(0.229, 0.224, 0.225));
+    subtract(frame, mean, frame);
+    divide(frame, std, frame);
+
+    return frame;
+}
+
+ov::Tensor infer_one_frame(
+        ov::InferRequest infer_request,
+        Mat frame, bool ov_preprocess,
+        ov::element::Type input_type,
+        ov::Shape input_shape) {
+    if (!ov_preprocess) {
+        frame = preprocess_frame(frame, input_shape);
+    }
+
     ov::Tensor input_tensor = ov::Tensor(input_type, input_shape, frame.data);
     infer_request.set_input_tensor(input_tensor);
     infer_request.start_async();
@@ -24,7 +43,7 @@ ov::Tensor infer_one_frame(ov::InferRequest infer_request, Mat frame) {
     return infer_request.get_output_tensor();
 }
 
-int infer(ov::CompiledModel model, int sec, vector<ov::Tensor> &outputs) {
+int infer(vector<ov::Tensor> &outputs, ov::CompiledModel model, int sec, bool inference_only, bool ov_preprocess) {
     VideoCapture cap("output/video.mp4");
 
     if (!cap.isOpened()) {
@@ -39,7 +58,10 @@ int infer(ov::CompiledModel model, int sec, vector<ov::Tensor> &outputs) {
     while (chrono::system_clock::now() < finish) {
         bool success = cap.read(frame);
         if (success) {
-            outputs.push_back(infer_one_frame(infer_request, frame));
+            outputs.push_back(infer_one_frame(
+                    infer_request, frame, ov_preprocess,
+                    model.input().get_element_type(),
+                    model.input().get_shape()));
         } else {
             cap.set(CAP_PROP_POS_FRAMES, 0);
             continue;
@@ -52,18 +74,18 @@ int infer(ov::CompiledModel model, int sec, vector<ov::Tensor> &outputs) {
     return frame_count;
 }
 
-void sync_infer(ov::CompiledModel model, int sec) {
+void sync_infer(ov::CompiledModel model, int sec, bool inference_only, bool ov_preprocess) {
     spdlog::info("sync inference in {} seconds...", sec);
     auto start = chrono::system_clock::now();
     vector<ov::Tensor> outputs;
-    auto frames = infer(model, sec, outputs);
+    auto frames = infer(outputs, model, sec, inference_only, ov_preprocess);
     auto end = chrono::system_clock::now();
     auto diff = chrono::duration_cast<chrono::seconds>(end - start).count();
     double fps = static_cast<double>(frames) / static_cast<double>(diff);
     cout << "fps: " << fps << endl;
 }
 
-void multi_infer(ov::CompiledModel model, int n_stream, int sec) {
+void multi_infer(ov::CompiledModel model, int n_stream, int sec, bool inference_only, bool ov_preprocess) {
     spdlog::info("async encoding with {} threads in {} seconds...", n_stream, sec);
     vector<future<int>> futures;
     vector<vector<ov::Tensor>> outputs(n_stream);
@@ -71,7 +93,7 @@ void multi_infer(ov::CompiledModel model, int n_stream, int sec) {
     auto start = chrono::system_clock::now();
 
     for (int i = 0; i < n_stream; ++i) {
-        futures.push_back(async(infer, model, sec, std::ref(outputs[i])));
+        futures.push_back(async(infer, ref(outputs[i]), model, sec, inference_only, ov_preprocess));
     }
 
     int total_frames = 0;
@@ -99,7 +121,7 @@ argparse::ArgumentParser parseArg(int argc, char *const *argv) {
             .help("run mode: sync, async or multi")
             .default_value(string{"sync"})
             .action([](const string &value) {
-                static const set<string> choices = {"sync", "async", "multi"};
+                static const set<string> choices = {"sync", "multi"};
                 if (choices.contains(value)) {
                     return value;
                 }
@@ -131,54 +153,70 @@ argparse::ArgumentParser parseArg(int argc, char *const *argv) {
             .help("inference only, no video decode, use random input.")
             .default_value(false)
             .implicit_value(true);
+    program.add_argument("-op", "--openvino_preprocess")
+            .help("preprocess image by openvino ppp.")
+            .default_value(false)
+            .implicit_value(true);
     program.parse_args(argc, argv);
     return program;
 }
 
-int main(int argc, char *argv[]) {
-    argparse::ArgumentParser program = parseArg(argc, argv);
-
-    int sec = program.get<int>("time");
-    string run_mode = program.get<string>("run_mode");
-    int n_stream = program.get<int>("n_stream");
-    string device = program.get<string>("device");
-
-    string model_name = program.get<string>("model");
-    string model_type = program.get<string>("model_type");
-    string model_path = fmt::format("output/model/{}/{}/model.xml", model_name, model_type);
-
+ov::Core config_core(const string &run_mode) {
     ov::Core core;
     if (run_mode == "async" or run_mode == "multi") {
         core.set_property("CPU", ov::hint::performance_mode(ov::hint::PerformanceMode::THROUGHPUT));
         core.set_property("GPU", ov::hint::performance_mode(ov::hint::PerformanceMode::THROUGHPUT));
     }
+    return core;
+}
+
+shared_ptr<ov::Model> config_model(const ov::Core &core, const string &model_path, bool ov_preprocess) {
     auto model = core.read_model(model_path);
 
-    ov::preprocess::PrePostProcessor ppp(model);
-    ov::preprocess::InputInfo &input = ppp.input();
-    input.tensor()
-            .set_element_type(ov::element::u8)
-            .set_spatial_dynamic_shape()
-            .set_layout("NHWC")
-            .set_color_format(ov::preprocess::ColorFormat::BGR);
-    input.model().set_layout("NCHW");
-    input.preprocess()
-            .convert_element_type(ov::element::f32)
-            .convert_color(ov::preprocess::ColorFormat::RGB)
-            .resize(ov::preprocess::ResizeAlgorithm::RESIZE_LINEAR)
-            .mean({0.485, 0.456, 0.406})
-            .scale({0.229, 0.224, 0.225});
-    std::stringstream buffer;
-    buffer << "Dump preprocessor: " << ppp << std::endl;
-    spdlog::info(buffer.str());
-    model = ppp.build();
+    if (ov_preprocess) {
+        ov::preprocess::PrePostProcessor ppp(model);
+        ov::preprocess::InputInfo &input = ppp.input();
+        input.tensor()
+                .set_element_type(ov::element::u8)
+                .set_spatial_dynamic_shape()
+                .set_layout("NHWC")
+                .set_color_format(ov::preprocess::ColorFormat::BGR);
+        input.model().set_layout("NCHW");
+        input.preprocess()
+                .convert_element_type(ov::element::f32)
+                .convert_color(ov::preprocess::ColorFormat::RGB)
+                .resize(ov::preprocess::ResizeAlgorithm::RESIZE_LINEAR)
+                .mean({0.485, 0.456, 0.406})
+                .scale({0.229, 0.224, 0.225});
+        stringstream buffer;
+        buffer << "Dump preprocessor: " << ppp << endl;
+        spdlog::info(buffer.str());
+        model = ppp.build();
+    }
+    return model;
+}
 
+int main(int argc, char *argv[]) {
+    argparse::ArgumentParser program = parseArg(argc, argv);
+
+    // Reading command line args
+    int sec = program.get<int>("time");
+    string run_mode = program.get<string>("run_mode");
+    int n_stream = program.get<int>("n_stream");
+    string device = program.get<string>("device");
+    bool inference_only = program.get<bool>("inference_only");
+    bool ov_preprocess = program.get<bool>("openvino_preprocess");
+    string model_name = program.get<string>("model");
+    string model_type = program.get<string>("model_type");
+    string model_path = fmt::format("output/model/{}/{}/model.xml", model_name, model_type);
+
+    ov::Core core = config_core(run_mode);
+    auto model = config_model(core, model_path, ov_preprocess);
     auto compared_model = core.compile_model(model, device);
 
-
     if (run_mode == "sync") {
-        sync_infer(compared_model, sec);
+        sync_infer(compared_model, sec, inference_only, ov_preprocess);
     } else if (run_mode == "multi") {
-        multi_infer(compared_model, n_stream, sec);
+        multi_infer(compared_model, n_stream, sec, inference_only, ov_preprocess);
     }
 }

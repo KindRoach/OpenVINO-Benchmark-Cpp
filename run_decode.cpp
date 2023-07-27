@@ -6,7 +6,6 @@
 #include <set>
 #include <spdlog/spdlog.h>
 
-argparse::ArgumentParser parseArg(int argc, char *const *argv);
 using namespace cv;
 using namespace std;
 
