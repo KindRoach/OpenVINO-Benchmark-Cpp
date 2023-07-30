@@ -1,10 +1,14 @@
-FROM ubuntu:22.04
+FROM continuumio/miniconda3
 LABEL authors="kindroach"
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update
-RUN apt-get install -y build-essential cmake gdb
+
+# Install dev tools
+RUN apt-get install -y build-essential cmake gdb linux-tools-$(uname -r)
+
+# Install 3rd party lib
 RUN apt-get install -y libopencv-dev
 
 # Install OpenVINO by APT, refer to:

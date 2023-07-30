@@ -9,29 +9,50 @@
 using namespace cv;
 using namespace std;
 
-int decode(int sec) {
-    VideoCapture cap("output/video.mp4");
+// declare functions
+argparse::ArgumentParser parseArg(int argc, char *const *argv);
+void sync_decode(int sec);
+void multi_decode(int n_stream, int sec);
+int decode(int sec);
 
-    if (!cap.isOpened()) {
-        spdlog::error("Error opening video stream or file");
-        exit(1);
+// program starts here
+int main(int argc, char *argv[]) {
+    argparse::ArgumentParser program = parseArg(argc, argv);
+
+    int sec = program.get<int>("time");
+    string run_mode = program.get<string>("run_mode");
+    int n_stream = program.get<int>("n_stream");
+
+    if (run_mode == "sync") {
+        sync_decode(sec);
+    } else if (run_mode == "multi") {
+        multi_decode(n_stream, sec);
     }
+}
 
-    Mat frame;
-    int frame_count = 0;
-    auto finish = chrono::system_clock::now() + chrono::seconds(sec);
-    while (chrono::system_clock::now() < finish) {
-        bool success = cap.read(frame);
-        if (not success) {
-            cap.set(CAP_PROP_POS_FRAMES, 0);
-            continue;
-        }
-        frame_count++;
-    }
-
-    cap.release();
-
-    return frame_count;
+argparse::ArgumentParser parseArg(int argc, char *const *argv) {
+    argparse::ArgumentParser program("sync_decode");
+    program.add_argument("-t", "--time")
+            .help("time in seconds for benchmark")
+            .default_value(60)
+            .scan<'i', int>();
+    program.add_argument("-rm", "--run_mode")
+            .help("run mode: sync or multi")
+            .default_value(string{"sync"})
+            .action([](const std::string &value) {
+                static const std::set<std::string> choices = {"sync", "multi"};
+                if (choices.contains(value)) {
+                    return value;
+                }
+                spdlog::error("illegal input for run mode: {}", value);
+                exit(1);
+            });
+    program.add_argument("-n", "--n_stream")
+            .help("number of decode stream")
+            .default_value(16)
+            .scan<'i', int>();
+    program.parse_args(argc, argv);
+    return program;
 }
 
 void sync_decode(int sec) {
@@ -69,41 +90,27 @@ void multi_decode(int n_stream, int sec) {
     cout << "fps: " << fps << endl;
 }
 
-argparse::ArgumentParser parseArg(int argc, char *const *argv) {
-    argparse::ArgumentParser program("sync_decode");
-    program.add_argument("-t", "--time")
-            .help("time in seconds for benchmark")
-            .default_value(60)
-            .scan<'i', int>();
-    program.add_argument("-rm", "--run_mode")
-            .help("run mode: sync or multi")
-            .default_value(string{"sync"})
-            .action([](const std::string &value) {
-                static const std::set<std::string> choices = {"sync", "multi"};
-                if (choices.contains(value)) {
-                    return value;
-                }
-                spdlog::error("illegal input for run mode: {}", value);
-                exit(1);
-            });
-    program.add_argument("-n", "--n_stream")
-            .help("number of decode stream")
-            .default_value(16)
-            .scan<'i', int>();
-    program.parse_args(argc, argv);
-    return program;
-}
+int decode(int sec) {
+    VideoCapture cap("output/video.mp4");
 
-int main(int argc, char *argv[]) {
-    argparse::ArgumentParser program = parseArg(argc, argv);
-
-    int sec = program.get<int>("time");
-    string run_mode = program.get<string>("run_mode");
-    int n_stream = program.get<int>("n_stream");
-
-    if (run_mode == "sync") {
-        sync_decode(sec);
-    } else if (run_mode == "multi") {
-        multi_decode(n_stream, sec);
+    if (!cap.isOpened()) {
+        spdlog::error("Error opening video stream or file");
+        exit(1);
     }
+
+    Mat frame;
+    int frame_count = 0;
+    auto finish = chrono::system_clock::now() + chrono::seconds(sec);
+    while (chrono::system_clock::now() < finish) {
+        bool success = cap.read(frame);
+        if (not success) {
+            cap.set(CAP_PROP_POS_FRAMES, 0);
+            continue;
+        }
+        frame_count++;
+    }
+
+    cap.release();
+
+    return frame_count;
 }
