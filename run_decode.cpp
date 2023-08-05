@@ -9,27 +9,6 @@
 using namespace cv;
 using namespace std;
 
-// declare functions
-argparse::ArgumentParser parseArg(int argc, char *const *argv);
-void sync_decode(int sec);
-void multi_decode(int n_stream, int sec);
-int decode(int sec);
-
-// program starts here
-int main(int argc, char *argv[]) {
-    argparse::ArgumentParser program = parseArg(argc, argv);
-
-    int sec = program.get<int>("time");
-    string run_mode = program.get<string>("run_mode");
-    int n_stream = program.get<int>("n_stream");
-
-    if (run_mode == "sync") {
-        sync_decode(sec);
-    } else if (run_mode == "multi") {
-        multi_decode(n_stream, sec);
-    }
-}
-
 argparse::ArgumentParser parseArg(int argc, char *const *argv) {
     argparse::ArgumentParser program("sync_decode");
     program.add_argument("-t", "--time")
@@ -53,6 +32,31 @@ argparse::ArgumentParser parseArg(int argc, char *const *argv) {
             .scan<'i', int>();
     program.parse_args(argc, argv);
     return program;
+}
+
+int decode(int sec) {
+    VideoCapture cap("output/video.mp4");
+
+    if (!cap.isOpened()) {
+        spdlog::error("Error opening video stream or file");
+        exit(1);
+    }
+
+    Mat frame;
+    int frame_count = 0;
+    auto finish = chrono::system_clock::now() + chrono::seconds(sec);
+    while (chrono::system_clock::now() < finish) {
+        bool success = cap.read(frame);
+        if (not success) {
+            cap.set(CAP_PROP_POS_FRAMES, 0);
+            continue;
+        }
+        frame_count++;
+    }
+
+    cap.release();
+
+    return frame_count;
 }
 
 void sync_decode(int sec) {
@@ -90,27 +94,16 @@ void multi_decode(int n_stream, int sec) {
     cout << "fps: " << fps << endl;
 }
 
-int decode(int sec) {
-    VideoCapture cap("output/video.mp4");
+int main(int argc, char *argv[]) {
+    argparse::ArgumentParser program = parseArg(argc, argv);
 
-    if (!cap.isOpened()) {
-        spdlog::error("Error opening video stream or file");
-        exit(1);
+    int sec = program.get<int>("time");
+    string run_mode = program.get<string>("run_mode");
+    int n_stream = program.get<int>("n_stream");
+
+    if (run_mode == "sync") {
+        sync_decode(sec);
+    } else if (run_mode == "multi") {
+        multi_decode(n_stream, sec);
     }
-
-    Mat frame;
-    int frame_count = 0;
-    auto finish = chrono::system_clock::now() + chrono::seconds(sec);
-    while (chrono::system_clock::now() < finish) {
-        bool success = cap.read(frame);
-        if (not success) {
-            cap.set(CAP_PROP_POS_FRAMES, 0);
-            continue;
-        }
-        frame_count++;
-    }
-
-    cap.release();
-
-    return frame_count;
 }

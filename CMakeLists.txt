@@ -14,7 +14,10 @@ target_include_directories(run_decode PRIVATE
         "lib/spdlog/include")
 target_link_libraries(run_decode PRIVATE ${OpenCV_LIBS})
 
-add_executable(run_infer run_infer.cpp)
+file(GLOB INFER_SOURCES infer/*.cpp)
+file(GLOB INFER_HEADERS infer/*.hpp)
+
+add_executable(run_infer run_infer.cpp ${INFER_SOURCES} ${INFER_HEADERS})
 target_include_directories(run_infer PRIVATE
         "lib/argparse/include"
         ${OpenCV_INCLUDE_DIRS}
