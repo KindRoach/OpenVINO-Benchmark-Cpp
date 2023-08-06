@@ -21,8 +21,7 @@ int infer_one_stream(std::vector<ov::Tensor> &outputs, ov::CompiledModel model, 
     while (std::chrono::system_clock::now() < finish) {
         bool success = cap.read(frame);
         if (success) {
-            if (!ov_preprocess) frame = preprocess_frame(frame, input_shape);
-            const auto &model_output = infer_one_frame(infer_request, frame, input_type, input_shape);
+            const auto &model_output = infer_one_frame(model, frame, input_type, input_shape, ov_preprocess);
             outputs.push_back(model_output);
         } else {
             cap.set(cv::CAP_PROP_POS_FRAMES, 0);
@@ -52,8 +51,12 @@ cv::Mat preprocess_frame(cv::Mat frame, ov::Shape input_shape) {
     return frame;
 }
 
-ov::Tensor infer_one_frame(ov::InferRequest infer_request, cv::Mat frame, ov::element::Type input_type, ov::Shape input_shape) {
+thread_local bool request_created = false;
+thread_local ov::InferRequest infer_request;
+ov::Tensor infer_one_frame(ov::CompiledModel model, cv::Mat frame, ov::element::Type input_type, ov::Shape input_shape, bool ov_preprocess) {
+    if (!ov_preprocess) frame = preprocess_frame(frame, input_shape);
     ov::Tensor input_tensor = ov::Tensor(input_type, input_shape, frame.data);
+    if (!request_created) infer_request = model.create_infer_request();
     infer_request.set_input_tensor(input_tensor);
     infer_request.start_async();
     infer_request.wait();

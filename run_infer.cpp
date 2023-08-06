@@ -1,5 +1,6 @@
 #include "infer/common.hpp"
 #include "infer/multi_infer.hpp"
+#include "infer/one_decode_multi_infer.hpp"
 #include "infer/sync_infer.hpp"
 #include <argparse/argparse.hpp>
 #include <future>
@@ -20,7 +21,7 @@ argparse::ArgumentParser parseArg(int argc, char *const *argv) {
             .help("run mode: sync, async or multi")
             .default_value(string{"sync"})
             .action([](const string &value) {
-                static const set<string> choices = {"sync", "multi"};
+                static const set<string> choices = {"sync", "multi", "one_decode_multi_infer"};
                 if (choices.contains(value)) {
                     return value;
                 }
@@ -119,5 +120,7 @@ int main(int argc, char *argv[]) {
         sync_infer(compared_model, sec, inference_only, ov_preprocess);
     } else if (run_mode == "multi") {
         multi_infer(compared_model, n_stream, sec, inference_only, ov_preprocess);
+    } else if (run_mode == "one_decode_multi_infer") {
+        one_decode_multi_infer(compared_model, n_stream, sec, inference_only, ov_preprocess);
     }
 }

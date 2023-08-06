@@ -8,7 +8,7 @@
 #include <spdlog/spdlog.h>
 
 
-void multi_infer(ov::CompiledModel model, int n_stream, int sec, bool inference_only, bool ov_preprocess) {
+std::vector<std::vector<ov::Tensor>> multi_infer(ov::CompiledModel model, int n_stream, int sec, bool inference_only, bool ov_preprocess) {
     using namespace std;
 
     spdlog::info("async inference with {} threads in {} seconds...", n_stream, sec);
@@ -32,6 +32,7 @@ void multi_infer(ov::CompiledModel model, int n_stream, int sec, bool inference_
     auto end = chrono::system_clock::now();
     auto diff = chrono::duration_cast<chrono::seconds>(end - start).count();
     double fps = static_cast<double>(total_frames) / static_cast<double>(diff);
-
     cout << "fps: " << fps << endl;
+
+    return outputs;
 }

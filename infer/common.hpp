@@ -8,4 +8,4 @@ int infer_one_stream(std::vector<ov::Tensor> &outputs, ov::CompiledModel model, 
 
 cv::Mat preprocess_frame(cv::Mat frame, ov::Shape input_shape);
 
-ov::Tensor infer_one_frame(ov::InferRequest infer_request, cv::Mat frame, ov::element::Type input_type, ov::Shape input_shape);
+ov::Tensor infer_one_frame(ov::CompiledModel model, cv::Mat frame, ov::element::Type input_type, ov::Shape input_shape, bool ov_preprocess);
