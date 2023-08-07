@@ -63,7 +63,7 @@ argparse::ArgumentParser parseArg(int argc, char *const *argv) {
 
 ov::Core config_core(const std::string &run_mode) {
     ov::Core core;
-    if (run_mode == "async" or run_mode == "multi") {
+    if (run_mode == "async" or run_mode == "multi" or run_mode == "one_decode_multi_infer") {
         core.set_property("CPU", ov::hint::performance_mode(ov::hint::PerformanceMode::THROUGHPUT));
         core.set_property("GPU", ov::hint::performance_mode(ov::hint::PerformanceMode::THROUGHPUT));
     }
