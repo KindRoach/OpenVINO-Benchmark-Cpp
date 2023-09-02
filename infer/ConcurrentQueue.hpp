@@ -8,7 +8,7 @@
 template<typename T>
 class ConcurrentQueue : public std::queue<T> {
 public:
-    explicit ConcurrentQueue(int capacity) : capacity(capacity), closed(false) {}
+    explicit ConcurrentQueue(int capacity) : capacity(capacity) {}
 
     void push(const T &item) {
         std::unique_lock<std::mutex> lock(mutex);
@@ -32,22 +32,9 @@ public:
         return std::queue<T>::size() == capacity;
     }
 
-    void close() {
-        std::unique_lock<std::mutex> lock(mutex);
-        closed = true;
-        lock.unlock();
-        cv.notify_all();
-    }
-
-    bool is_closed() {
-        std::unique_lock<std::mutex> lock(mutex);
-        return closed;
-    }
-
 
 private:
     int capacity;
-    bool closed;
     std::mutex mutex;
     std::condition_variable cv;
 };

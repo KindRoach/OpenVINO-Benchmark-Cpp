@@ -9,7 +9,7 @@
 #include <spdlog/spdlog.h>
 
 
-void decode_and_submit_infer(ConcurrentQueue<std::shared_future<ov::Tensor>> &queue, ov::CompiledModel model, int sec, bool inference_only, bool ov_preprocess) {
+void decode_and_submit_infer(concurrentQueue &queue, ov::CompiledModel model, int sec, bool inference_only, bool ov_preprocess) {
     cv::VideoCapture cap("output/video.mp4");
 
     if (!cap.isOpened()) {
@@ -36,14 +36,16 @@ void decode_and_submit_infer(ConcurrentQueue<std::shared_future<ov::Tensor>> &qu
     }
 
     cap.release();
-    queue.close();
+    queue.push(std::nullopt);
 }
 
 
-std::vector<ov::Tensor> gather_infer_result(ConcurrentQueue<std::shared_future<ov::Tensor>> &queue) {
+std::vector<ov::Tensor> gather_infer_result(concurrentQueue &queue) {
     std::vector<ov::Tensor> result;
-    while (!queue.is_closed()) {
-        result.push_back(queue.pop().get());
+    auto item = queue.pop();
+    while (item.has_value()) {
+        result.push_back(item.value().get());
+        item = queue.pop();
     }
     return result;
 }
@@ -54,7 +56,7 @@ std::vector<ov::Tensor> one_decode_multi_infer(ov::CompiledModel model, int n_st
     spdlog::info("async inference with {} threads in {} seconds...", n_stream, sec);
     auto start = chrono::system_clock::now();
 
-    auto queue = ConcurrentQueue<shared_future<ov::Tensor>>(n_stream);
+    auto queue = ConcurrentQueue<optional<shared_future<ov::Tensor>>>(n_stream);
     thread t(decode_and_submit_infer, ref(queue), model, sec, inference_only, ov_preprocess);
     auto outputs = gather_infer_result(queue);
     t.join();
