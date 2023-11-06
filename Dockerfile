@@ -19,6 +19,5 @@ RUN apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
 RUN echo "deb https://apt.repos.intel.com/openvino/2023 ubuntu22 main" | tee /etc/apt/sources.list.d/intel-openvino-2023.list
 RUN apt-get update && apt-get install -y openvino
 
-RUN git clone --recurse-submodules  https://github.com/KindRoach/OpenVINO-Benchmark-Cpp.git
-WORKDIR OpenVINO-Benchmark-Cpp
-RUN cmake -S . -B build && cmake --build build
+# Setup python env
+RUN apt-get install -y python3 python-is-python3 python3-pip
