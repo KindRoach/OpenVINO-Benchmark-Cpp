@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
 
 # Install dev tools
-RUN apt-get install -y build-essential cmake gdb git linux-tools-$(uname -r)
+RUN apt-get install -y build-essential cmake gdb git
 
 # Install 3rd party lib
 RUN apt-get install -y libopencv-dev

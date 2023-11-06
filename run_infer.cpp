@@ -1,4 +1,3 @@
-#include "infer/common.hpp"
 #include "infer/multi_infer.hpp"
 #include "infer/one_decode_multi_infer.hpp"
 #include "infer/sync_infer.hpp"
@@ -6,58 +5,43 @@
 #include <future>
 #include <iostream>
 #include <openvino/openvino.hpp>
-#include <set>
 #include <spdlog/spdlog.h>
 
-argparse::ArgumentParser parseArg(int argc, char *const *argv) {
+std::unique_ptr<argparse::ArgumentParser> parseArg(int argc, char *const *argv) {
     using namespace std;
 
-    argparse::ArgumentParser program("sync_decode");
-    program.add_argument("-t", "--time")
+    auto program = std::make_unique<argparse::ArgumentParser>("run_infer");
+    program->add_argument("-t", "--time")
             .help("time in seconds for benchmark")
             .default_value(60)
             .scan<'i', int>();
-    program.add_argument("-rm", "--run_mode")
+    program->add_argument("-rm", "--run_mode")
             .help("run mode: sync, async or multi")
             .default_value(string{"sync"})
-            .action([](const string &value) {
-                static const set<string> choices = {"sync", "multi", "one_decode_multi_infer"};
-                if (choices.contains(value)) {
-                    return value;
-                }
-                spdlog::error("illegal input: {}", value);
-                exit(1);
-            });
-    program.add_argument("-n", "--n_stream")
+            .choices("sync", "multi", "one_decode_multi_infer");
+    program->add_argument("-n", "--n_stream")
             .help("number of infer_one_stream stream")
             .default_value(24)
             .scan<'i', int>();
-    program.add_argument("-m", "--model")
+    program->add_argument("-m", "--model")
             .help("model used for inference")
             .default_value(string{"resnet_50"});
-    program.add_argument("-mt", "--model_type")
+    program->add_argument("-mt", "--model_type")
             .help("model type: fp32, fp16 or int8")
             .default_value(string{"int8"})
-            .action([](const string &value) {
-                static const set<string> choices = {"fp32", "fp16", "int8"};
-                if (choices.contains(value)) {
-                    return value;
-                }
-                spdlog::error("illegal input for model type: {}", value);
-                exit(1);
-            });
-    program.add_argument("-d", "--device")
+            .choices("fp32", "fp16", "int8");
+    program->add_argument("-d", "--device")
             .help("device used for inference")
             .default_value(string{"CPU"});
-    program.add_argument("-io", "--inference_only")
+    program->add_argument("-io", "--inference_only")
             .help("inference only, no video decode, use random input.")
             .default_value(false)
             .implicit_value(true);
-    program.add_argument("-op", "--openvino_preprocess")
+    program->add_argument("-op", "--openvino_preprocess")
             .help("preprocess image by openvino ppp.")
             .default_value(false)
             .implicit_value(true);
-    program.parse_args(argc, argv);
+    program->parse_args(argc, argv);
     return program;
 }
 
@@ -99,17 +83,17 @@ std::shared_ptr<ov::Model> config_model(const ov::Core &core, const std::string 
 int main(int argc, char *argv[]) {
     using namespace std;
 
-    argparse::ArgumentParser program = parseArg(argc, argv);
+    auto program = parseArg(argc, argv);
 
     // Reading command line args
-    int sec = program.get<int>("time");
-    string run_mode = program.get<string>("run_mode");
-    int n_stream = program.get<int>("n_stream");
-    string device = program.get<string>("device");
-    bool inference_only = program.get<bool>("inference_only");
-    bool ov_preprocess = program.get<bool>("openvino_preprocess");
-    string model_name = program.get<string>("model");
-    string model_type = program.get<string>("model_type");
+    int sec = program->get<int>("time");
+    string run_mode = program->get<string>("run_mode");
+    int n_stream = program->get<int>("n_stream");
+    string device = program->get<string>("device");
+    bool inference_only = program->get<bool>("inference_only");
+    bool ov_preprocess = program->get<bool>("openvino_preprocess");
+    string model_name = program->get<string>("model");
+    string model_type = program->get<string>("model_type");
     string model_path = fmt::format("output/model/{}/{}/model.xml", model_name, model_type);
 
     ov::Core core = config_core(run_mode);
