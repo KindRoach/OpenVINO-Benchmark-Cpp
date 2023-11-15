@@ -1,9 +1,3 @@
-[submodule "lib/argparse"]
-	path = lib/argparse
-	url = https://github.com/p-ranav/argparse.git
 [submodule "lib/OpenVINO-Benchmark-Python"]
 	path = lib/OpenVINO-Benchmark-Python
 	url = https://github.com/KindRoach/OpenVINO-Benchmark-Python.git
-[submodule "lib/spdlog"]
-	path = lib/spdlog
-	url = https://github.com/gabime/spdlog.git

@@ -1,0 +1,18 @@
+{
+  "name" : "openvino-benchmark-cpp",
+  "version-string" : "1.0.0",
+  "builtin-baseline" : "01acfdfde3ed99280d3883a8fccd5fa4408f5214",
+  "dependencies" : [ {
+    "name" : "argparse",
+    "version>=" : "3.0"
+  }, {
+    "name" : "spdlog",
+    "version>=" : "1.12.0"
+  }, {
+    "name" : "openvino",
+    "version>=" : "2023.1.0#4"
+  }, {
+    "name" : "opencv",
+    "version>=" : "4.8.0"
+  } ]
+}

@@ -4,22 +4,26 @@ project(OpenVINO-Benchmark-Cpp)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 
-find_package(OpenCV REQUIRED)
+find_package(argparse CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 find_package(OpenVINO REQUIRED)
+find_package(OpenCV REQUIRED)
+
 
 add_executable(run_decode run_decode.cpp)
-target_include_directories(run_decode PRIVATE
-        "lib/argparse/include"
-        ${OpenCV_INCLUDE_DIRS}
-        "lib/spdlog/include")
-target_link_libraries(run_decode PRIVATE ${OpenCV_LIBS})
+target_link_libraries(run_decode PRIVATE
+        argparse::argparse
+        spdlog::spdlog
+        ${OpenCV_LIBS}
+)
+
 
 file(GLOB INFER_SOURCES infer/*.cpp)
 file(GLOB INFER_HEADERS infer/*.hpp)
-
 add_executable(run_infer run_infer.cpp ${INFER_SOURCES} ${INFER_HEADERS})
-target_include_directories(run_infer PRIVATE
-        "lib/argparse/include"
-        ${OpenCV_INCLUDE_DIRS}
-        "lib/spdlog/include")
-target_link_libraries(run_infer PRIVATE ${OpenCV_LIBS} openvino::runtime)
+target_link_libraries(run_infer PRIVATE
+        argparse::argparse
+        spdlog::spdlog
+        openvino::runtime
+        ${OpenCV_LIBS}
+)
