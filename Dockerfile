@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
 
 # Install dev tools
-RUN apt-get install -y build-essential cmake gdb git
+RUN apt-get install -y apt-utils build-essential cmake gdb git python3 python-is-python3 python3-pip
 
 # Install 3rd party lib
 RUN apt-get install -y libopencv-dev
@@ -19,5 +19,12 @@ RUN apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
 RUN echo "deb https://apt.repos.intel.com/openvino/2023 ubuntu22 main" | tee /etc/apt/sources.list.d/intel-openvino-2023.list
 RUN apt-get update && apt-get install -y openvino
 
-# Setup python env
-RUN apt-get install -y python3 python-is-python3 python3-pip
+# intel GPU driver
+RUN wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | gpg --dearmor --output /usr/share/keyrings/intel-graphics.gpg
+RUN echo "deb [arch=amd64,i386 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/ubuntu jammy client" | tee /etc/apt/sources.list.d/intel-gpu-jammy.list
+RUN apt-get update && apt-get install -y \
+    intel-opencl-icd intel-level-zero-gpu level-zero \
+    intel-media-va-driver-non-free libmfx1 libmfxgen1 libvpl2 \
+    libegl-mesa0 libegl1-mesa libegl1-mesa-dev libgbm1 libgl1-mesa-dev libgl1-mesa-dri \
+    libglapi-mesa libgles2-mesa-dev libglx-mesa0 libigdgmm12 libxatracker2 mesa-va-drivers \
+    mesa-vdpau-drivers mesa-vulkan-drivers va-driver-all vainfo hwinfo clinfo

@@ -23,7 +23,7 @@ def add_directory_to_path(dir_to_add):
             winreg.SetValueEx(key, "Path", 0, winreg.REG_EXPAND_SZ, new_path)
             print(f"\"{dir_to_add}\" added to Path.")
         else:
-            print(f"\"{dir_to_add}\" already exist in Path")
+            print(f"\"{dir_to_add}\" already exist in Path.")
 
     except Exception as e:
         print(f"Error: {e}")
@@ -32,22 +32,27 @@ def add_directory_to_path(dir_to_add):
         winreg.CloseKey(key)
 
 
-target_dir = Path.home().joinpath("dev")
-target_dir.mkdir(exist_ok=True)
-for source_item in [
-    Path("lib/opencv"),
-    Path("lib/openvino"),
-]:
-    target_item = target_dir.joinpath(Path(*source_item.parts[1:]))
-    if not target_item.exists():
-        shutil.copytree(source_item, target_item)
-        print(f"\"{source_item}\" copied to \"{target_item}\".")
-    else:
-        print(f"\"{target_item}\" already exist.")
+def copy_to_user_dev():
+    target_dir = Path.home().joinpath("dev")
+    target_dir.mkdir(exist_ok=True)
+    for source_item in [
+        Path("lib/opencv"),
+        Path("lib/openvino"),
+    ]:
+        target_item = target_dir.joinpath(Path(*source_item.parts[1:]))
+        if not target_item.exists():
+            shutil.copytree(source_item, target_item)
+            print(f"\"{source_item}\" copied to \"{target_item}\".")
+        else:
+            print(f"\"{target_item}\" already exist.")
 
-for bin_dir in [
-    "opencv/build/x64/vc16/bin",
-    "openvino/runtime/bin/intel64/Debug",
-    "openvino/runtime/3rdparty/tbb/bin",
-]:
-    add_directory_to_path(target_dir.joinpath(bin_dir))
+
+if __name__ == '__main__':
+    copy_to_user_dev()
+    for bin_dir in [
+        "opencv/build/x64/vc16/bin",
+        "openvino/runtime/bin/intel64/Debug",
+        "openvino/runtime/bin/intel64/Release",
+        "openvino/runtime/3rdparty/tbb/bin",
+    ]:
+        add_directory_to_path(Path.home().joinpath("dev").joinpath(bin_dir))

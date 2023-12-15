@@ -18,5 +18,3 @@
 cmake -S . -B build
 cmake --build build
 ```
-
-> **_NOTE:_** if you are using CLion, please add `-DCMAKE_PREFIX_PATH=/path/to/conda/envs/OpenVINO-Benchmark-Cpp` as CMake options.
