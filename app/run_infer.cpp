@@ -71,8 +71,8 @@ std::shared_ptr<ov::Model> config_model(const ov::Core &core, const std::string 
                 .convert_element_type(ov::element::f32)
                 .convert_color(ov::preprocess::ColorFormat::RGB)
                 .resize(ov::preprocess::ResizeAlgorithm::RESIZE_LINEAR)
-                .mean({0.485, 0.456, 0.406})
-                .scale({0.229, 0.224, 0.225});
+                .mean({0.485 * 255, 0.456 * 255, 0.406 * 255})
+                .scale({0.229 * 255, 0.224 * 255, 0.225 * 255});
         std::stringstream buffer;
         buffer << "Dump preprocessor: " << ppp << std::endl;
         spdlog::info(buffer.str());
