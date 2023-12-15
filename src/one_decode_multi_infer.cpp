@@ -1,13 +1,12 @@
 #include "one_decode_multi_infer.hpp"
 #include "ConcurrentQueue.hpp"
+#include "argparse/argparse.hpp"
 #include "common.hpp"
-#include <argparse/argparse.hpp>
+#include "openvino/openvino.hpp"
+#include "spdlog/spdlog.h"
 #include <chrono>
 #include <future>
 #include <iostream>
-#include <openvino/openvino.hpp>
-#include <spdlog/spdlog.h>
-
 
 void decode_and_submit_infer(concurrentQueue &queue, ov::CompiledModel model, int sec, bool inference_only, bool ov_preprocess) {
     cv::VideoCapture cap("output/video.mp4");

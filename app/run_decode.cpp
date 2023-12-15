@@ -1,7 +1,8 @@
-#include <argparse/argparse.hpp>
 #include <chrono>
 #include <future>
 #include <iostream>
+
+#include <argparse/argparse.hpp>
 #include <opencv2/opencv.hpp>
 #include <spdlog/spdlog.h>
 

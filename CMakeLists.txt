@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.22)
 project(OpenVINO-Benchmark-Cpp)
 
 set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 
 include(FetchContent)
 
@@ -18,11 +17,5 @@ endif ()
 find_package(OpenCV REQUIRED)
 find_package(OpenVINO REQUIRED)
 
-add_executable(run_decode run_decode.cpp)
-target_link_libraries(run_decode PRIVATE spdlog argparse ${OpenCV_LIBS})
-
-file(GLOB INFER_SOURCES infer/*.cpp)
-file(GLOB INFER_HEADERS infer/*.hpp)
-
-add_executable(run_infer run_infer.cpp ${INFER_SOURCES} ${INFER_HEADERS})
-target_link_libraries(run_infer PRIVATE spdlog argparse ${OpenCV_LIBS} openvino::runtime)
+add_subdirectory(app)
+add_subdirectory(src)

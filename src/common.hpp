@@ -1,8 +1,8 @@
 #pragma once
 
-#include <opencv2/opencv.hpp>
-#include <openvino/openvino.hpp>
-#include <spdlog/spdlog.h>
+#include "opencv2/opencv.hpp"
+#include "openvino/openvino.hpp"
+#include "spdlog/spdlog.h"
 
 int infer_one_stream(std::vector<ov::Tensor> &outputs, ov::CompiledModel model, int sec, bool inference_only, bool ov_preprocess);
 

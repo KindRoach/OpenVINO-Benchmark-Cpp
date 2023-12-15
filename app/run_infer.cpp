@@ -1,11 +1,12 @@
-#include "infer/multi_infer.hpp"
-#include "infer/one_decode_multi_infer.hpp"
-#include "infer/sync_infer.hpp"
-#include <argparse/argparse.hpp>
-#include <future>
 #include <iostream>
+
+#include <argparse/argparse.hpp>
 #include <openvino/openvino.hpp>
 #include <spdlog/spdlog.h>
+
+#include "multi_infer.hpp"
+#include "one_decode_multi_infer.hpp"
+#include "sync_infer.hpp"
 
 std::unique_ptr<argparse::ArgumentParser> parseArg(int argc, char *const *argv) {
     using namespace std;

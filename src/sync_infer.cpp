@@ -1,10 +1,10 @@
 #include "sync_infer.hpp"
+#include "argparse/argparse.hpp"
 #include "common.hpp"
-#include <argparse/argparse.hpp>
+#include "openvino/openvino.hpp"
+#include "spdlog/spdlog.h"
 #include <chrono>
 #include <iostream>
-#include <openvino/openvino.hpp>
-#include <spdlog/spdlog.h>
 
 std::vector<ov::Tensor> sync_infer(ov::CompiledModel model, int sec, bool inference_only, bool ov_preprocess) {
     using namespace std;

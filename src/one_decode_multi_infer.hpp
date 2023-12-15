@@ -1,9 +1,9 @@
 #pragma once
 
 #include "ConcurrentQueue.hpp"
+#include "openvino/openvino.hpp"
 #include <future>
 #include <iostream>
-#include <openvino/openvino.hpp>
 #include <optional>
 
 typedef ConcurrentQueue<std::optional<std::shared_future<ov::Tensor>>> concurrentQueue;
